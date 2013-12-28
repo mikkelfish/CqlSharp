@@ -138,6 +138,8 @@ namespace CqlSharp
                                                                                      {DbType.String, CqlType.Varchar},
                                                                                  };
 
+        
+
         /// <summary>
         ///   Gets the .Net type that represents the given CqlType
         /// </summary>
