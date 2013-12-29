@@ -56,6 +56,7 @@
     <Compile Include="Fluent\Define.cs" />
     <Compile Include="Fluent\Definition\CqlAlterTable.cs" />
     <Compile Include="Fluent\Definition\CqlCreateTable.cs" />
+    <Compile Include="Fluent\Definition\CqlDropIndex.cs" />
     <Compile Include="Fluent\Definition\CqlDropKeyspace.cs" />
     <Compile Include="Fluent\Definition\CqlDropTable.cs" />
     <Compile Include="Fluent\Definition\CqlIndex.cs" />
@@ -80,6 +81,13 @@
     <Compile Include="CqlSchemaTableColumnNames.cs" />
     <Compile Include="DiscoveryScope.cs" />
     <Compile Include="Extensions\Loader.cs" />
+    <Compile Include="Fluent\Manipulate.cs" />
+    <Compile Include="Fluent\Manipulation\CqlBatch.cs" />
+    <Compile Include="Fluent\Manipulation\CqlDelete.cs" />
+    <Compile Include="Fluent\Manipulation\CqlInsert.cs" />
+    <Compile Include="Fluent\Manipulation\CqlUpdate.cs" />
+    <Compile Include="Fluent\Manipulation\IManipulation.cs" />
+    <Compile Include="Fluent\Manipulation\WhereBase.cs" />
     <Compile Include="Logging\ConsoleLogger.cs" />
     <Compile Include="Logging\DebugLogger.cs" />
     <Compile Include="Logging\FastGuid.cs" />

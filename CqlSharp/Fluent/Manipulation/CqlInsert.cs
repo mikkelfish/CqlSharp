@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace CqlSharp.Fluent.Manipulation
 {
 
-    public class CqlInsert : IFluentCommand
+    public class CqlInsert : IManipulation
     {
         private readonly string tableName;
         private readonly Dictionary<string, string> toInsert = new Dictionary<string, string>();

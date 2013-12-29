@@ -161,61 +161,15 @@ namespace CqlSharp.Fluent.Manipulation
         /// </summary>
         public CqlUpdateNamedSet FinishedSet
         {
-            //TODO Add exceptions
             get { return new CqlUpdateNamedSet(this.update); }
         }
     }
 
-    public class CqlUpdateNamedSet
+    public class CqlUpdateNamedSet : WhereBase<CqlUpdateNamedSet, CqlUpdate>
     {
-        private readonly CqlUpdate update;
-
-        internal CqlUpdateNamedSet(CqlUpdate update)
+        internal CqlUpdateNamedSet(CqlUpdate update) : base(update)
         {
-            this.update = update;
-        }
-
-        private string getPara(string customParameterName)
-        {
-            return customParameterName == null ? "?" : ":" + customParameterName;
-        }
-
-        /// <summary>
-        /// Add a WHERE relation, e.g. WHERE age = ?
-        /// </summary>
-        /// <param name="colName">The name of the column (must be the last column of the partition key)</param>
-        /// <param name="customParameterName">The optional custom parameter name. If not set, then reference the parameter by the column name when setting command parameters</param>
-        /// <returns></returns>
-        public CqlUpdateNamedSet AddWhereRelation(string colName, string customParameterName = null)
-        {
-            var para = this.getPara(customParameterName);
-            this.update.AddWhere(new CqlUpdate.SimpleWhere(colName, para));
-            return this;
-        }
-
-        /// <summary>
-        /// The IN relation is only supported for the last column of the partition key, e.g. WHERE age IN ?
-        /// </summary>
-        /// <param name="colName">The name of the column (must be the last column of the partition key)</param>
-        /// <param name="customParameterName">The optional custom parameter name. If not set, then reference the parameter by the column name when setting command parameters</param>
-        /// <returns></returns>
-        public CqlUpdateNamedSet AddInWhere(string colName, string customParameterName = null)
-        {
-            var para = this.getPara(customParameterName);
-            this.update.AddWhere(new CqlUpdate.InWhere(colName, para));
-            return this;
-        }
-
-        /// <summary>
-        /// Use this when all where clauses have been added. NOTE: All primary keys (partition + cluster) must have a where clause associated with them for the update to execute
-        /// </summary>
-        public CqlUpdate FinishedWhere
-        {
-            get
-            {
-                //TODO Add exceptions
-                return this.update;
-            }
+            
         }
     }
 
@@ -237,7 +191,7 @@ namespace CqlSharp.Fluent.Manipulation
         /// <returns></returns>
         public CqlUpdateNamedSetAndWhere AddIf(string colName, string parameterName)
         {
-            this.update.AddIf(new CqlUpdate.SimpleWhere(colName, parameterName));
+            this.update.AddIf(new SimpleWhere(colName, parameterName));
             return this;
         }
 
@@ -250,7 +204,7 @@ namespace CqlSharp.Fluent.Manipulation
         }
     }
 
-    public class CqlUpdate : IFluentCommand
+    public class CqlUpdate : IManipulation, IHasWhere<CqlUpdate>
     {
         #region Assignment
 
@@ -380,49 +334,6 @@ namespace CqlSharp.Fluent.Manipulation
 
         #endregion
 
-        #region Where
-
-        internal interface IWhere 
-        {
-            string WhereString { get; }
-        }
-
-        internal class SimpleWhere : IWhere
-        {
-            private readonly string colName;
-            private readonly string paramName;
-
-            public SimpleWhere(string colname, string param)
-            {
-                this.colName = colname;
-                this.paramName = param;
-            }
-
-            public string WhereString
-            {
-                get { return String.Format("{0} = {1}", this.colName, this.paramName); }
-            }
-        }
-
-        internal class InWhere : IWhere
-        {
-            private readonly string colName;
-            private readonly string paramName;
-
-            public InWhere(string colname, string param)
-            {
-                this.colName = colname;
-                this.paramName = param;
-            }
-
-            public string WhereString
-            {
-                get { return String.Format("{0} IN {1}", this.colName, this.paramName); }
-            }
-        }
-
-        #endregion
-
         private readonly string tableName;
         private readonly List<IAssign> toSet = new List<IAssign>();
         private readonly List<IWhere> whereClauses = new List<IWhere>();
@@ -441,7 +352,7 @@ namespace CqlSharp.Fluent.Manipulation
             return this;
         }
 
-        internal CqlUpdate AddWhere(IWhere where)
+        CqlUpdate IHasWhere<CqlUpdate>.AddWhere(IWhere where)
         {
             this.whereClauses.Add(where);
             return this;
@@ -488,6 +399,11 @@ namespace CqlSharp.Fluent.Manipulation
         {
             get
             {
+                if (this.toSet.Count == 0)
+                    throw new InvalidOperationException("All updates must have at least one set clause");
+                if (this.whereClauses.Count == 0)
+                    throw new InvalidOperationException("All updates must have their full primary key defined, meaning there has to be at least one where clause");
+
                 var toRet = new StringBuilder();
                 toRet.AppendFormat("UPDATE {0}", this.tableName);
                 if (this.ttl != 0 || this.timestamp != 0)
