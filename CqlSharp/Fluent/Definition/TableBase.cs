@@ -98,7 +98,7 @@ namespace CqlSharp.Fluent.Definition
         /// </summary>
         /// <param name="seconds">Default: 864000</param>
         /// <returns></returns>
-        public T WithGCGraceSeconds(long seconds)
+        public T WithGcGraceSeconds(long seconds)
         {
             this.options.Add(new SimpleOption<long>("gc_grace_seconds", seconds, sc => sc >= 0));
             return this as T;

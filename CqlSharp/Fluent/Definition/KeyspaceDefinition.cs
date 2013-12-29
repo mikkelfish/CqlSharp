@@ -4,11 +4,11 @@ using System.Linq;
 
 namespace CqlSharp.Fluent.Definition
 {
-    public abstract class KeyspaceDefinition : IBuiltCommand
+    public abstract class CqlKeyspaceDefinition : IFluentCommand
     {
-        internal class CqlCreateKeyspace : KeyspaceDefinition
+        internal class CreateKeyspace : CqlKeyspaceDefinition
         {
-            internal CqlCreateKeyspace(string keyspace)
+            internal CreateKeyspace(string keyspace)
                 : base(keyspace)
             {
 
@@ -24,9 +24,10 @@ namespace CqlSharp.Fluent.Definition
                 get { return "IF NOT EXISTS "; }
             }
         }
-        internal class CqlAlterKeyspace : KeyspaceDefinition
+        
+        internal class AlterKeyspace : CqlKeyspaceDefinition
         {
-            internal CqlAlterKeyspace(string keyspace)
+            internal AlterKeyspace(string keyspace)
                 : base(keyspace)
             {
 
@@ -43,29 +44,40 @@ namespace CqlSharp.Fluent.Definition
             }
         }
 
-        private string Keyspace { get; set; }
-        private SimpleOption<bool> Durable { get; set; }
-        private MapOption Replication { get; set; }
-        private bool ThrowError { get;  set; }
+        private readonly string keyspace;
+        private SimpleOption<bool> durable;
+        internal MapOption replication;
+        private bool throwError;
 
-        internal KeyspaceDefinition(string keyspace)
+        internal CqlKeyspaceDefinition(string keyspace)
         {
-            this.Keyspace = keyspace;
-            this.Durable = new SimpleOption<bool>("durable_writes", true);
+            this.keyspace = keyspace;
+            this.durable = new SimpleOption<bool>("durable_writes", true);
         }
 
         protected abstract string Command { get; }
         protected abstract string ErrorOverwrite { get; }
 
-        public KeyspaceDefinition SetDurability(bool durability)
+        /// <summary>
+        /// Whether to use the commit log for updates on this keyspace (disable this option at your own risk!)
+        /// </summary>
+        /// <param name="durability">Durability setting, default true</param>
+        /// <returns></returns>
+        public CqlKeyspaceDefinition SetDurability(bool durability)
         {
-            this.Durable = new SimpleOption<bool>("durable_writes", durability);
+            this.durable = new SimpleOption<bool>("durable_writes", durability);
             return this;
         }
 
-        public KeyspaceDefinition SetThrowOnError(bool throwOnError)
+        /// <summary>
+        /// Attempting to create an already existing keyspace will return an error unless the throwOnError is false. 
+        /// If it is false, the statement will be a no-op if the keyspace already exists.
+        /// </summary>
+        /// <param name="throwOnError">Whether to throw if the keyspace already exists</param>
+        /// <returns></returns>
+        public CqlKeyspaceDefinition SetThrowOnError(bool throwOnError)
         {
-            this.ThrowError = throwOnError;
+            this.throwError = throwOnError;
             return this;
         }
 
@@ -75,38 +87,48 @@ namespace CqlSharp.Fluent.Definition
             {
                 return String.Format("{0} KEYSPACE {1} {2} WITH {3} AND {4};", 
                     this.Command,
-                    this.ThrowError ? ErrorOverwrite : "",
-                    this.Keyspace, 
-                    this.Replication.BuildString, 
-                    this.Durable.BuildString);
+                    !this.throwError ? ErrorOverwrite : "",
+                    this.keyspace, 
+                    this.replication.BuildString, 
+                    this.durable.BuildString);
             }
         }
     }
 
     public class CqlKeyspaceNamed
     {
-        private KeyspaceDefinition definition { get; private set; }
-        internal CqlKeyspaceNamed(KeyspaceDefinition definition)
+        private readonly CqlKeyspaceDefinition definition;
+        internal CqlKeyspaceNamed(CqlKeyspaceDefinition definition)
         {
             this.definition = definition;
         }
 
-
-        public KeyspaceDefinition WithSimpleStrategy(int replicationFactor)
+        /// <summary>
+        /// A simple strategy that defines a simple replication factor for the whole cluster. The only sub-options supported is 'replication_factor' to define that replication factor and is mandatory.
+        /// </summary>
+        /// <param name="replicationFactor">The replication factor to use</param>
+        /// <returns></returns>
+        public CqlKeyspaceDefinition WithSimpleStrategy(int replicationFactor)
         {
-            this.definition.Replication = new MapOption("replication", 
+            this.definition.replication = new MapOption("replication", 
                 new SimpleOption<string>("class", "SimpleStrategy"),
                 new SimpleOption<int>("replication_factor", replicationFactor, rf => rf > 0));
             return this.definition;
         }
 
-        public KeyspaceDefinition WithNetworkTopologyStrategy(IDictionary<string, int> topology)
+        /// <summary>
+        /// A replication strategy that allows to set the replication factor independently for each data-center.
+        /// The rest of the sub-options are key-value pairs where each time the key is the name of a datacenter and the value the replication factor for that data-center.
+        /// </summary>
+        /// <param name="topology">The topology to use in the strategy</param>
+        /// <returns></returns>
+        public CqlKeyspaceDefinition WithNetworkTopologyStrategy(IDictionary<string, int> topology)
         {
             var transformed = topology
                 .Select(kvp => new SimpleOption<int>(kvp.Key, kvp.Value, rf => rf > 0))
                 .Cast<IOption>();
 
-            this.definition.Replication = new MapOption("replication",
+            this.definition.replication = new MapOption("replication",
                 transformed.Union(new[] { new SimpleOption<string>("class", "SimpleStrategy") }));
             return this.definition;
         }

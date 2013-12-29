@@ -14,12 +14,28 @@ namespace CqlSharp.Fluent.Definition
             this.table = new CqlCreateTable(name);
         }
 
+        /// <summary>
+        /// The first column of the key is called the partition key. It has the property that all the rows sharing the same partition key (even across table in fact) are stored on the same physical node. 
+        /// Also, insertion/update/deletion on rows sharing the same partition key for a given table are performed atomically and in isolation. 
+        /// Note that it is possible to have a composite partition key, i.e. a partition key formed of multiple columns.
+        /// </summary>
+        /// <param name="name">The name of the column used for the partition key</param>
+        /// <param name="type">The type of the column</param>
+        /// <returns></returns>
         public CqlCreateTable HasPartitionKey(string name, Type type)
         {
             this.table.HasPartitionKey(name, type);
             return this.table;
         }
 
+
+        /// <summary>
+        /// The first column of the key is called the partition key. It has the property that all the rows sharing the same partition key (even across table in fact) are stored on the same physical node. 
+        /// Also, insertion/update/deletion on rows sharing the same partition key for a given table are performed atomically and in isolation. 
+        /// Note that it is possible to have a composite partition key, i.e. a partition key formed of multiple columns.
+        /// </summary>
+        /// <param name="keys">The columns used for the composite partition key</param>
+        /// <returns></returns>
         public CqlCreateTable HasPartitionKeys(Dictionary<string, Type> keys)
         {
             foreach (var kvp in keys)
@@ -31,11 +47,11 @@ namespace CqlSharp.Fluent.Definition
     }
 
 
-    public class CqlCreateTable : TableBase<CqlCreateTable>, IBuiltCommand
+    public class CqlCreateTable : TableBase<CqlCreateTable>, IFluentCommand
     {
-        private string TableName { get; set; }
-        private bool ThrowError { get; set; }
-      
+        private readonly string tableName;
+        private bool throwError;
+
         private readonly Dictionary<string, string> columns = new Dictionary<string, string>();
         private readonly List<string> clusteringKeys = new List<string>();
         private readonly List<string> partitionKeys = new List<string>();
@@ -43,61 +59,46 @@ namespace CqlSharp.Fluent.Definition
 
         internal CqlCreateTable(string tableName)
         {
-            this.TableName = tableName;
-        }
-
-        private bool implementsInterface(Type genericType, Type genericInterface)
-        {
-            if (genericType.IsInterface && genericType.IsGenericType &&
-                genericType.GetGenericTypeDefinition() == genericInterface)
-                return true;
-
-            foreach (var i in genericType.GetInterfaces())
-                if (i.IsGenericType && i.GetGenericTypeDefinition() == genericInterface)
-                    return true;
-
-            return false;
+            this.tableName = tableName;
         }
 
         internal CqlCreateTable HasPartitionKey(string name, Type type)
         {
-            this.addColumn(name, type);
+            this.addColumn(name, type, true);
             if (!this.partitionKeys.Contains(name))
                 this.partitionKeys.Add(name);
             return this;
         }
-        private CqlCreateTable addColumn(string name, Type type)
+        
+        private CqlCreateTable addColumn(string name, Type type, bool mustBeSimple)
         {
             if (!this.columns.ContainsKey(name))
             {
-                string cqlType;
-                if (!type.IsGenericType)
-                    cqlType = type.ToCqlType().ToString().ToLower();
-                else if (this.implementsInterface(type, typeof(IList<>)))
-                {
-                    cqlType = "list<" + type.GetGenericArguments()[0] + ">";
-                }
-                else if (this.implementsInterface(type, typeof(ISet<>)))
-                {
-                    cqlType = "set<" + type.GetGenericArguments()[0] + ">";
-                }
-                else if (this.implementsInterface(type, typeof(IDictionary<,>)))
-                {
-                    cqlType = "map<" + type.GetGenericArguments()[0] + "," + type.GetGenericArguments()[1] + ">";
-                }
-                else throw new InvalidOperationException("Do not know how to convert " + type.FullName + " to column type");
-
-                this.columns.Add(name, cqlType);
+                this.columns.Add(name, type.ToCqlColumnType(mustBeSimple));
             }
             else throw new InvalidOperationException("The table already has a definition for column " + name);
             return this;
         }
 
+        /// <summary>
+        /// Adds a (non-primary key) column. When inserting a given row, not all columns needs to be defined (except for those part of the key), 
+        /// and missing columns occupy no space on disk. Furthermore, adding new columns is a constant time operation. 
+        /// There is thus no need to try to anticipate future usage (or to cry when you haven’t) when creating a table.
+        /// </summary>
+        /// <param name="name">Name of the column</param>
+        /// <param name="type">Type of the column</param>
+        /// <returns></returns>
         public CqlCreateTable AddColumn(string name, Type type)
         {
-            return this.addColumn(name, type);
+            return this.addColumn(name, type, false);
         }
 
+        /// <summary>
+        /// Adds a (non-primary key) column with Java qualifed type
+        /// </summary>
+        /// <param name="name">Name of the column</param>
+        /// <param name="qualifiedName">Type of the column</param>
+        /// <returns></returns>
         public CqlCreateTable AddColumnCustomJavaType(string name, string qualifiedName)
         {
             if (!this.columns.ContainsKey(name))
@@ -108,10 +109,16 @@ namespace CqlSharp.Fluent.Definition
             return this;
         }
 
-
+        /// <summary>
+        /// Adds a column used within the primary key (along with the partition key(s) previously defined.  On a given physical node, rows for a given partition key are stored in the order induced by
+        /// the clustering columns, making the retrieval of rows in that clustering order particularly efficient.
+        /// </summary>
+        /// <param name="name">Name of the column</param>
+        /// <param name="type">Type of the column</param>
+        /// <returns></returns>
         public CqlCreateTable AddClusteringKey(string name, Type type)
         {
-            this.addColumn(name, type);
+            this.addColumn(name, type, true);
             if (!this.clusteringKeys.Contains(name))
                 this.clusteringKeys.Add(name);
             return this;
@@ -123,7 +130,7 @@ namespace CqlSharp.Fluent.Definition
             get 
             {
                 var toRet = new StringBuilder();
-                toRet.AppendFormat("CREATE TABLE {0} {1} (", this.TableName, this.ThrowError ? "" : "IF NOT EXISTS");
+                toRet.AppendFormat("CREATE TABLE {0} {1} (", this.tableName, !this.throwError ? "IF NOT EXISTS" : "");
                 foreach (var col in this.columns)
                 {
                     toRet.AppendFormat("{0} {1},", col.Key, col.Value);
@@ -167,9 +174,14 @@ namespace CqlSharp.Fluent.Definition
             }
         }
 
+        /// <summary>
+        /// Attempting to create an already existing table will return an error unless the throwOnError is false. If it false, the statement will be a no-op if the table already exists.
+        /// </summary>
+        /// <param name="throwOnError">Whether to throw when the table already exists</param>
+        /// <returns></returns>
         public CqlCreateTable SetThrowOnError(bool throwOnError)
         {
-            this.ThrowError = throwOnError;
+            this.throwError = throwOnError;
             return this;
         }
 

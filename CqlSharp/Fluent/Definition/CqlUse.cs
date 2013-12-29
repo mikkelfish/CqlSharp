@@ -1,6 +1,6 @@
 ﻿namespace CqlSharp.Fluent.Definition
 {
-    public class CqlUse : IBuiltCommand
+    public class CqlUse : IFluentCommand
     {
         public string Keyspace { get; private set; }
         internal CqlUse(string keyspace)

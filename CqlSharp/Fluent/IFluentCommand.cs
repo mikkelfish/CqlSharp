@@ -1,6 +1,6 @@
 ﻿namespace CqlSharp.Fluent
 {
-    public interface IBuiltCommand
+    public interface IFluentCommand
     {
         string BuildString { get; }
     }

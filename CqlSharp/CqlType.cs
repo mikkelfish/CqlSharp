@@ -237,5 +237,49 @@ namespace CqlSharp
 
             throw new ArgumentOutOfRangeException("colType", colType, "DbType is not supported");
         }
+
+        private static bool implementsInterface(Type genericType, Type genericInterface)
+        {
+            if (genericType.IsInterface && genericType.IsGenericType &&
+                genericType.GetGenericTypeDefinition() == genericInterface)
+                return true;
+
+            foreach (var i in genericType.GetInterfaces())
+                if (i.IsGenericType && i.GetGenericTypeDefinition() == genericInterface)
+                    return true;
+
+            return false;
+        }
+
+        /// <summary>
+        /// Gets the corresponding column definition string for a type
+        /// </summary>
+        /// <param name="type">Type of the column</param>
+        /// <returns></returns>
+        public static string ToCqlColumnType(this Type type, bool mustBeSimple)
+        {
+            string cqlType;
+            if (!type.IsGenericType)
+                return type.ToCqlType().ToString().ToLower();
+            
+            if (mustBeSimple)
+                throw new InvalidOperationException("The type is not valid for this column because it is a collection. Are you trying to set the type on a clustering or partition key?");
+
+            if (implementsInterface(type, typeof(IList<>)))
+            {
+                cqlType = "list<" + type.GetGenericArguments()[0] + ">";
+            }
+            else if (implementsInterface(type, typeof(ISet<>)))
+            {
+                cqlType = "set<" + type.GetGenericArguments()[0] + ">";
+            }
+            else if (implementsInterface(type, typeof(IDictionary<,>)))
+            {
+                cqlType = "map<" + type.GetGenericArguments()[0] + "," + type.GetGenericArguments()[1] + ">";
+            }
+            else throw new InvalidOperationException("Do not know how to convert " + type.FullName + " to column type");
+            return cqlType;
+
+        }
     }
 }
