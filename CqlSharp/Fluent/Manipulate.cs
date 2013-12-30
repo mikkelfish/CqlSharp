@@ -17,9 +17,9 @@ namespace CqlSharp.Fluent
         /// </summary>
         /// <param name="tableName">The name of the table to insert into</param>
         /// <returns></returns>
-        public static CqlInsert Insert(string tableName)
+        public static CqlInsertNamed Insert(string tableName)
         {
-            return new CqlInsert(tableName);
+            return new CqlInsertNamed(tableName);
         }
 
         /// <summary>

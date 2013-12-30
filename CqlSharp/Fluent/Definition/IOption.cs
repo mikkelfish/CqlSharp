@@ -5,5 +5,6 @@
     {
         CommandOption OptionType { get; }
         string BuildString { get; }
+        string InnerBuildString { get; }
     }
 }

@@ -2,15 +2,15 @@
 {
     public class CqlUse : IFluentCommand
     {
-        public string Keyspace { get; private set; }
+        private readonly string keyspace;
         internal CqlUse(string keyspace)
         {
-            this.Keyspace = keyspace;
+            this.keyspace = keyspace;
         }
 
         public string BuildString
         {
-            get { return "USE " + this.Keyspace + ";"; }
+            get { return "USE " + this.keyspace + ";"; }
         }
     }
 }

@@ -71,17 +71,23 @@ namespace CqlSharp.Fluent.Definition
                 
 
                 var toRet = new StringBuilder(this.Name + " = {");
-                for (int i = 0; i < this.backing.Count; i++)
+                for (int i = 0; i < this.backing.Count - 1; i++)
                 {
-                    toRet.Append(this.backing[i] + ", ");
+                    toRet.Append(this.backing[i].InnerBuildString + ", ");
                 }
 
                 if (this.backing.Count > 0)
-                    toRet.Append(this.backing.Last());
+                    toRet.Append(this.backing.Last().InnerBuildString);
 
                 toRet.Append("}");
                 return toRet.ToString();
             }
+        }
+
+
+        public string InnerBuildString
+        {
+            get { throw new NotImplementedException("Maps cannot be inside each other"); }
         }
     }
 }

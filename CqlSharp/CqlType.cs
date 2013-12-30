@@ -267,15 +267,15 @@ namespace CqlSharp
 
             if (implementsInterface(type, typeof(IList<>)))
             {
-                cqlType = "list<" + type.GetGenericArguments()[0] + ">";
+                cqlType = "list<" + type.GetGenericArguments()[0].ToCqlColumnType(true) + ">";
             }
             else if (implementsInterface(type, typeof(ISet<>)))
             {
-                cqlType = "set<" + type.GetGenericArguments()[0] + ">";
+                cqlType = "set<" + type.GetGenericArguments()[0].ToCqlColumnType(true) + ">";
             }
             else if (implementsInterface(type, typeof(IDictionary<,>)))
             {
-                cqlType = "map<" + type.GetGenericArguments()[0] + "," + type.GetGenericArguments()[1] + ">";
+                cqlType = "map<" + type.GetGenericArguments()[0].ToCqlColumnType(true) + "," + type.GetGenericArguments()[1].ToCqlColumnType(true) + ">";
             }
             else throw new InvalidOperationException("Do not know how to convert " + type.FullName + " to column type");
             return cqlType;

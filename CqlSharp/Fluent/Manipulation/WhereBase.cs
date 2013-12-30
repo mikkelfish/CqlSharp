@@ -53,19 +53,96 @@ namespace CqlSharp.Fluent.Manipulation
             }
         }
 
+        public enum RangeOperator { Equal, LessThan, GreaterThan, LessThanEqual, GreaterThanEqual };
+
+        internal class RangeWhere : IWhere
+        {
+            
+
+            private readonly string colName;
+            private readonly string paramName;
+            private readonly RangeOperator operation;
+
+            public RangeWhere(string colname, string param, RangeOperator operation)
+            {
+                this.colName = colname;
+                this.paramName = param;
+                this.operation = operation;
+            }
+
+            public string WhereString
+            {
+                get 
+                {
+                    var opStr = "<";
+                    if (this.operation == RangeOperator.GreaterThan)
+                        opStr = ">";
+                    else if (this.operation == RangeOperator.LessThanEqual)
+                        opStr = "<=";
+                    else if (this.operation == RangeOperator.GreaterThanEqual)
+                        opStr = ">=";
+                    return String.Format("{0} {1} {2}", 
+                    this.colName, 
+                    opStr,
+                    this.paramName); 
+                }
+            }
+        }
+
+        internal class TokenWhere : IWhere
+        {
+            private readonly string[] colNames;
+            private readonly string paramName;
+            private readonly RangeOperator operation;
+
+            public TokenWhere(string[] colnames, string param, RangeOperator operation)
+            {
+                this.colNames = colnames;
+                this.paramName = param;
+                this.operation = operation;
+            }
+
+            public string WhereString
+            {
+                get
+                {
+                    var opStr = "=";
+                    if (this.operation == RangeOperator.LessThan)
+                        opStr = "<";
+                    if (this.operation == RangeOperator.GreaterThan)
+                        opStr = ">";
+                    else if (this.operation == RangeOperator.LessThanEqual)
+                        opStr = "<=";
+                    else if (this.operation == RangeOperator.GreaterThanEqual)
+                        opStr = ">=";
+
+                    var toRet = new StringBuilder();
+                    toRet.Append("TOKEN(");
+                    for (int i = 0; i < this.colNames.Length-1; i++)
+                    {
+                        toRet.AppendFormat("{0}, ", this.colNames[i]);
+                    }
+                    toRet.AppendFormat("{0}", this.colNames.Last());
+
+                    toRet.AppendFormat(") {0} {1}", opStr, this.paramName);
+                    return toRet.ToString();
+                }
+            }
+        }
+
         #endregion
 
     public class WhereBase<T, U> where T:WhereBase<T,U>
            where U: IHasWhere<U>
     {
-        private readonly U update;
+        protected readonly U update;
 
         internal WhereBase(U update)
         {
             this.update = update;
         }
 
-        private string getPara(string customParameterName)
+        protected string getPara(string customParameterName)
         {
             return customParameterName == null ? "?" : ":" + customParameterName;
         }
@@ -76,7 +153,7 @@ namespace CqlSharp.Fluent.Manipulation
         /// <param name="colName">The name of the column (must be the last column of the partition key)</param>
         /// <param name="customParameterName">The optional custom parameter name. If not set, then reference the parameter by the column name when setting command parameters</param>
         /// <returns></returns>
-        public T AddWhereRelation(string colName, string customParameterName = null)
+        public T AddWhere(string colName, string customParameterName = null)
         {
             var para = this.getPara(customParameterName);
             this.update.AddWhere(new SimpleWhere(colName, para));
@@ -89,7 +166,7 @@ namespace CqlSharp.Fluent.Manipulation
         /// <param name="colName">The name of the column (must be the last column of the partition key)</param>
         /// <param name="customParameterName">The optional custom parameter name. If not set, then reference the parameter by the column name when setting command parameters</param>
         /// <returns></returns>
-        public T AddInWhere(string colName, string customParameterName = null)
+        public T AddWhereIn(string colName, string customParameterName = null)
         {
             var para = this.getPara(customParameterName);
             this.update.AddWhere(new InWhere(colName, para));

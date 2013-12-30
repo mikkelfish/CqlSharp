@@ -42,7 +42,7 @@ namespace CqlSharp.Fluent.Manipulation
         public CqlUpdateNamed AddCounterIncrement(string counterName, string customParameterName = null)
         {
             var para = this.getPara(customParameterName);
-            this.update.AddAssignment(new CqlUpdate.Append(counterName, para));
+            this.update.AddAssignment(new CqlUpdate.Increment(counterName, para));
             return this;
         }
 
@@ -55,7 +55,7 @@ namespace CqlSharp.Fluent.Manipulation
         public CqlUpdateNamed AddCounterDecrement(string counterName, string customParameterName = null)
         {
             var para = this.getPara(customParameterName);
-            this.update.AddAssignment(new CqlUpdate.Remove(counterName, para));
+            this.update.AddAssignment(new CqlUpdate.Decrement(counterName, para));
             return this;
         }
 
@@ -81,7 +81,7 @@ namespace CqlSharp.Fluent.Manipulation
         public CqlUpdateNamed AddListAppend(string colName, string customParameterName = null)
         {
             var para = this.getPara(customParameterName);
-            this.update.AddAssignment(new CqlUpdate.Append(colName, para));
+            this.update.AddAssignment(new CqlUpdate.AppendList(colName, para));
             return this;
         }
 
@@ -94,7 +94,7 @@ namespace CqlSharp.Fluent.Manipulation
         public CqlUpdateNamed AddSetItem(string colName, string customParameterName = null)
         {
             var para = this.getPara(customParameterName);
-            this.update.AddAssignment(new CqlUpdate.Append(colName, para));
+            this.update.AddAssignment(new CqlUpdate.AppendSet(colName, para));
             return this;
         }
 
@@ -107,7 +107,7 @@ namespace CqlSharp.Fluent.Manipulation
         public CqlUpdateNamed AddSetItemDeletion(string colName, string customParameterName = null)
         {
             var para = this.getPara(customParameterName);
-            this.update.AddAssignment(new CqlUpdate.Remove(colName, para));
+            this.update.AddAssignment(new CqlUpdate.RemoveSet(colName, para));
             return this;
         }
 
@@ -243,16 +243,16 @@ namespace CqlSharp.Fluent.Manipulation
 
             public string AssignString
             {
-                get { return String.Format("{0} = {1} + {0}", this.colName, this.paramName); }
+                get { return String.Format("{0} = [{1}] + {0}", this.colName, this.paramName); }
             }
         }
 
-        internal class Append : IAssign
+        internal class AppendSet : IAssign
         {
-             private readonly string colName;
+            private readonly string colName;
             private readonly string paramName;
 
-            public Append(string colname, string param)
+            public AppendSet(string colname, string param)
             {
                 this.colName = colname;
                 this.paramName = param;
@@ -260,9 +260,51 @@ namespace CqlSharp.Fluent.Manipulation
 
             public string AssignString
             {
-                get { return String.Format("{0} = {0} + {1}", this.colName, this.paramName); }
+                get
+                {
+                    return String.Format("{0} = {0} + {1}", this.colName, this.paramName);
+                }
+            }
+        }
+
+        internal class AppendList : IAssign
+        {
+            private readonly string colName;
+            private readonly string paramName;
+
+            public AppendList(string colname, string param)
+            {
+                this.colName = colname;
+                this.paramName = param;
             }
 
+            public string AssignString
+            {
+                get
+                {
+                    return String.Format("{0} = {0} + {1}", this.colName, this.paramName);
+                }
+            }
+        }
+
+        internal class Increment : IAssign
+        {
+            private readonly string colName;
+            private readonly string paramName;
+
+            public Increment(string colname, string param)
+            {
+                this.colName = colname;
+                this.paramName = param;
+            }
+
+            public string AssignString
+            {
+                get
+                {
+                    return String.Format("{0} = {0} + {1}", this.colName, this.paramName );
+                }
+            }
         }
 
         internal class MapAdd : IAssign
@@ -293,12 +335,12 @@ namespace CqlSharp.Fluent.Manipulation
 
         }
 
-        internal class Remove : IAssign
+        internal class RemoveSet : IAssign
         {
             private readonly string colName;
             private readonly string paramName;
 
-            public Remove(string colname, string param)
+            public RemoveSet(string colname, string param)
             {
                 this.colName = colname;
                 this.paramName = param;
@@ -306,7 +348,25 @@ namespace CqlSharp.Fluent.Manipulation
 
             public string AssignString
             {
-                get { return String.Format("{0} = {0} - {1}", this.colName, this.paramName); }
+                get { return String.Format("{0} = {0} - {1}", this.colName,this.paramName); }
+            }
+
+        }
+
+        internal class Decrement : IAssign
+        {
+            private readonly string colName;
+            private readonly string paramName;
+
+            public Decrement(string colname, string param)
+            {
+                this.colName = colname;
+                this.paramName = param;
+            }
+
+            public string AssignString
+            {
+                get { return String.Format("{0} = {0} - {1}", this.colName,this.paramName); }
             }
 
         }

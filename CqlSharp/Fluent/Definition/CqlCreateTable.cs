@@ -6,10 +6,10 @@ using System.Text;
 
 namespace CqlSharp.Fluent.Definition
 {
-    public class CqlTableNamed
+    public class CqlCreateTableNamed
     {
         private readonly CqlCreateTable table;
-        internal CqlTableNamed(string name)
+        internal CqlCreateTableNamed(string name)
         {
             this.table = new CqlCreateTable(name);
         }
@@ -22,10 +22,10 @@ namespace CqlSharp.Fluent.Definition
         /// <param name="name">The name of the column used for the partition key</param>
         /// <param name="type">The type of the column</param>
         /// <returns></returns>
-        public CqlCreateTable HasPartitionKey(string name, Type type)
+        public CqlCreateTableNamedAndPartitioned HasPartitionKey(string name, Type type)
         {
             this.table.HasPartitionKey(name, type);
-            return this.table;
+            return new CqlCreateTableNamedAndPartitioned(this.table);
         }
 
 
@@ -36,13 +36,87 @@ namespace CqlSharp.Fluent.Definition
         /// </summary>
         /// <param name="keys">The columns used for the composite partition key</param>
         /// <returns></returns>
-        public CqlCreateTable HasPartitionKeys(Dictionary<string, Type> keys)
+        public CqlCreateTableNamedAndPartitioned HasPartitionKeys(Dictionary<string, Type> keys)
         {
             foreach (var kvp in keys)
             {
                 this.table.HasPartitionKey(kvp.Key, kvp.Value);
             }
-            return this.table;
+            return new CqlCreateTableNamedAndPartitioned(this.table);
+        }
+    }
+
+    public class CqlCreateTableNamedAndPartitioned
+    {
+        private readonly CqlCreateTable table;
+        internal CqlCreateTableNamedAndPartitioned(CqlCreateTable table)
+        {
+            this.table = table;
+        }
+
+        /// <summary>
+        /// Adds a column used within the primary key (along with the partition key(s) previously defined.  On a given physical node, rows for a given partition key are stored in the order induced by
+        /// the clustering columns, making the retrieval of rows in that clustering order particularly efficient.
+        /// </summary>
+        /// <param name="name">Name of the column</param>
+        /// <param name="type">Type of the column</param>
+        /// <returns></returns>
+        public CqlCreateTableNamedAndPartitioned AddClusteringKey(string name, Type type)
+        {
+            this.table.AddClusteringKey(name, type);
+            return this;
+        }
+
+        /// <summary>
+        /// Call this after all clustering keys have been added
+        /// </summary>
+        public CqlCreateTableColumnDefiner FinishedClusteringKeys
+        {
+            get { return new CqlCreateTableColumnDefiner(this.table); }
+        }
+    }
+
+    public class CqlCreateTableColumnDefiner
+    {
+        private readonly CqlCreateTable table;
+        internal CqlCreateTableColumnDefiner(CqlCreateTable table)
+        {
+            this.table = table;
+        }
+
+
+        /// <summary>
+        /// Adds a (non-primary key) column. When inserting a given row, not all columns needs to be defined (except for those part of the key), 
+        /// and missing columns occupy no space on disk. Furthermore, adding new columns is a constant time operation. 
+        /// There is thus no need to try to anticipate future usage (or to cry when you haven’t) when creating a table.
+        /// </summary>
+        /// <param name="name">Name of the column</param>
+        /// <param name="type">Type of the column</param>
+        /// <returns></returns>
+        public CqlCreateTableColumnDefiner AddColumn(string name, Type type)
+        {
+            this.table.AddColumn(name, type);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds a (non-primary key) column with Java qualifed type
+        /// </summary>
+        /// <param name="name">Name of the column</param>
+        /// <param name="qualifiedName">Type of the column</param>
+        /// <returns></returns>
+        public CqlCreateTableColumnDefiner AddColumnCustomJavaType(string name, string qualifiedName)
+        {
+            this.table.AddColumnCustomJavaType(name, qualifiedName);
+            return this;
+        }
+
+        /// <summary>
+        /// Call this after all columns have been defined
+        /// </summary>
+        public CqlCreateTable FinishedDefiningColumns
+        {
+            get { return this.table; }
         }
     }
 
@@ -50,7 +124,7 @@ namespace CqlSharp.Fluent.Definition
     public class CqlCreateTable : TableBase<CqlCreateTable>, IFluentCommand
     {
         private readonly string tableName;
-        private bool throwError;
+        private bool throwError = true;
 
         private readonly Dictionary<string, string> columns = new Dictionary<string, string>();
         private readonly List<string> clusteringKeys = new List<string>();
@@ -88,7 +162,7 @@ namespace CqlSharp.Fluent.Definition
         /// <param name="name">Name of the column</param>
         /// <param name="type">Type of the column</param>
         /// <returns></returns>
-        public CqlCreateTable AddColumn(string name, Type type)
+        internal CqlCreateTable AddColumn(string name, Type type)
         {
             return this.addColumn(name, type, false);
         }
@@ -99,7 +173,7 @@ namespace CqlSharp.Fluent.Definition
         /// <param name="name">Name of the column</param>
         /// <param name="qualifiedName">Type of the column</param>
         /// <returns></returns>
-        public CqlCreateTable AddColumnCustomJavaType(string name, string qualifiedName)
+        internal CqlCreateTable AddColumnCustomJavaType(string name, string qualifiedName)
         {
             if (!this.columns.ContainsKey(name))
             {
@@ -116,7 +190,7 @@ namespace CqlSharp.Fluent.Definition
         /// <param name="name">Name of the column</param>
         /// <param name="type">Type of the column</param>
         /// <returns></returns>
-        public CqlCreateTable AddClusteringKey(string name, Type type)
+        internal CqlCreateTable AddClusteringKey(string name, Type type)
         {
             this.addColumn(name, type, true);
             if (!this.clusteringKeys.Contains(name))
@@ -130,7 +204,7 @@ namespace CqlSharp.Fluent.Definition
             get 
             {
                 var toRet = new StringBuilder();
-                toRet.AppendFormat("CREATE TABLE {0} {1} (", this.tableName, !this.throwError ? "IF NOT EXISTS" : "");
+                toRet.AppendFormat("CREATE TABLE {0} {1} (",  !this.throwError ? "IF NOT EXISTS" : "", this.tableName);
                 foreach (var col in this.columns)
                 {
                     toRet.AppendFormat("{0} {1},", col.Key, col.Value);

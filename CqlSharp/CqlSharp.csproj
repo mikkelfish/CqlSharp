@@ -88,6 +88,8 @@
     <Compile Include="Fluent\Manipulation\CqlUpdate.cs" />
     <Compile Include="Fluent\Manipulation\IManipulation.cs" />
     <Compile Include="Fluent\Manipulation\WhereBase.cs" />
+    <Compile Include="Fluent\Query.cs" />
+    <Compile Include="Fluent\Querying\CqlSelect.cs" />
     <Compile Include="Logging\ConsoleLogger.cs" />
     <Compile Include="Logging\DebugLogger.cs" />
     <Compile Include="Logging\FastGuid.cs" />

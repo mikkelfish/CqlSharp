@@ -7,6 +7,46 @@ using System.Threading.Tasks;
 namespace CqlSharp.Fluent.Manipulation
 {
 
+    public class CqlInsertNamed
+    {
+        private readonly CqlInsert insert;
+        internal CqlInsertNamed(string tableName)
+        {
+            this.insert = new CqlInsert(tableName);
+        }
+
+        /// <summary>
+        /// Specify a column that will be inserted
+        /// </summary>
+        /// <param name="columnName">The name of the column</param>
+        /// <returns></returns>
+        public CqlInsertNamed With(string columnName)
+        {
+            this.insert.With(columnName);
+            return this;
+        }
+
+        /// <summary>
+        /// Specify a column that will be inserted with a named parameter. E.g. insert into Test.BasicFlow (id,value) values(:id1,:value1); cmd.Parameters["id1"].Value = 0;
+        /// </summary>
+        /// <param name="columnName">The name of the column</param>
+        /// /// <param name="parameterName">The name of the parameter</param>
+        /// <returns></returns>
+        public CqlInsertNamed WithNamedParameter(string columnName, string parameterName)
+        {
+            this.insert.WithNamedParameter(columnName, parameterName);
+            return this;
+        }
+
+        /// <summary>
+        /// Use when all insert columns have been defined. Ensure all columns making up the primary key and at least one value have been defined
+        /// </summary>
+        public CqlInsert Finished
+        {
+            get { return this.insert; }
+        }
+    }
+
     public class CqlInsert : IManipulation
     {
         private readonly string tableName;
@@ -25,7 +65,7 @@ namespace CqlSharp.Fluent.Manipulation
         /// </summary>
         /// <param name="columnName">The name of the column</param>
         /// <returns></returns>
-        public CqlInsert With(string columnName)
+        internal CqlInsert With(string columnName)
         {
             if (!this.toInsert.ContainsKey(columnName))
                 this.toInsert.Add(columnName, "?");
@@ -39,7 +79,7 @@ namespace CqlSharp.Fluent.Manipulation
         /// <param name="columnName">The name of the column</param>
         /// /// <param name="parameterName">The name of the parameter</param>
         /// <returns></returns>
-        public CqlInsert WithNamedParameter(string columnName, string parameterName)
+        internal CqlInsert WithNamedParameter(string columnName, string parameterName)
         {
             if (!this.toInsert.ContainsKey(columnName))
                 this.toInsert.Add(columnName, ":" + parameterName);

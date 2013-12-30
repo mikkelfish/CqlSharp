@@ -28,7 +28,10 @@ namespace CqlSharp.Fluent.Definition
         {
             get 
             {
-                return String.Format("'{0}' : {1}", this.Name, this.Value);
+                var val = this.Value.ToString();
+                if (this.Value is string)
+                    val = "'" + val + "'";
+                return String.Format("{0} = {1}", this.Name, val);
             }
         }
 
@@ -37,5 +40,17 @@ namespace CqlSharp.Fluent.Definition
             return this.BuildString;
         }
 
+
+
+        public string InnerBuildString
+        {
+            get 
+            {
+                var val = this.Value.ToString();
+                if (this.Value is string)
+                    val = "'" + val + "'";
+                return String.Format("'{0}' : {1}", this.Name, val);
+            }
+        }
     }
 }

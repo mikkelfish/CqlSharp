@@ -27,6 +27,18 @@ namespace CqlSharp.Fluent
         }
 
         /// <summary>
+        /// The USE statement takes an existing keyspace name as argument and set it as the per-connection current working keyspace.
+        /// All subsequent keyspace-specific actions will be performed in the context of the selected keyspace, unless otherwise specified, 
+        /// until another USE statement is issued or the connection terminates.
+        /// </summary>
+        /// <param name="keyspace">The name of the keyspace to make active</param>
+        /// <returns></returns>
+        public static CqlUse Use(string keyspace)
+        {
+            return new CqlUse(keyspace);
+        }
+
+        /// <summary>
         /// A DROP KEYSPACE statement results in the immediate, irreversible removal of an existing keyspace, including all column families in it, and all data contained in those column families.
         /// </summary>
         /// <param name="name">Name of the keyspace to drop</param>
@@ -44,9 +56,9 @@ namespace CqlSharp.Fluent
         /// </summary>
         /// <param name="name">Name of the table to create</param>
         /// <returns></returns>
-        public static CqlTableNamed CreateTable(string name)
+        public static CqlCreateTableNamed CreateTable(string name)
         {
-            return new CqlTableNamed(name);
+            return new CqlCreateTableNamed(name);
         }
 
         /// <summary>
