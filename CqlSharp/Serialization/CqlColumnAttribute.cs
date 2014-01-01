@@ -51,5 +51,10 @@ namespace CqlSharp.Serialization
         /// </summary>
         /// <value> The index of the partition key. </value>
         public int PartitionKeyIndex { get; set; }
+
+        /// <summary>
+        /// Gets or sets the index of the column in the clustering keys
+        /// </summary>
+        public int ClusteringKeyIndex { get; set; }
     }
 }

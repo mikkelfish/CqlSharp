@@ -1,4 +1,5 @@
 ﻿using CqlSharp.Fluent.Definition;
+using CqlSharp.Serialization;
 
 namespace CqlSharp.Fluent
 {
@@ -59,6 +60,13 @@ namespace CqlSharp.Fluent
         public static CqlCreateTableNamed CreateTable(string name)
         {
             return new CqlCreateTableNamed(name);
+        }
+
+        public static CqlCreateTable CreateTable<T>()
+        {
+            var accessor = ObjectAccessor<T>.Instance;
+            var named = CreateTable(accessor.KeySpaceTableAndName);
+            
         }
 
         /// <summary>
