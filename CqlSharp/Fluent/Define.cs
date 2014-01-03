@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using CqlSharp.Fluent.Definition;
 using CqlSharp.Serialization;
 
@@ -19,6 +20,21 @@ namespace CqlSharp.Fluent
         }
 
         /// <summary>
+        /// Create a keyspace as defined by a type
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        /// <exception cref="InvalidOperationException">Thrown if the type has no associated keyspace</exception>
+        public static CqlKeyspaceNamed CreateKeyspace<T>()
+        {
+            var accessor = ObjectAccessor<T>.Instance;
+            if (accessor.Keyspace == null)
+                throw new InvalidOperationException(
+                    "Cannot create a keyspace for this type because it isn't set as an attribute");
+            return new CqlKeyspaceNamed(new CqlKeyspaceDefinition.CreateKeyspace(accessor.Keyspace));
+        }
+
+        /// <summary>
         /// The ALTER KEYSPACE statement alter the properties of an existing keyspace. The supported properties are the same that for the CREATE TABLE statement.
         /// </summary>
         /// <param name="name">Name of the keyspace to alter</param>
@@ -26,6 +42,21 @@ namespace CqlSharp.Fluent
         public static CqlKeyspaceNamed AlterKeyspace(string name)
         {
             return new CqlKeyspaceNamed(new CqlKeyspaceDefinition.AlterKeyspace(name));
+        }
+
+        /// <summary>
+        /// Alter a keyspace as defined by a type
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        /// <exception cref="InvalidOperationException">Thrown if the type has no associated keyspace</exception>
+        public static CqlKeyspaceNamed AlterKeyspace<T>()
+        {
+            var accessor = ObjectAccessor<T>.Instance;
+            if (accessor.Keyspace == null)
+                throw new InvalidOperationException(
+                    "Cannot create a keyspace for this type because it isn't set as an attribute");
+            return new CqlKeyspaceNamed(new CqlKeyspaceDefinition.AlterKeyspace(accessor.Keyspace));
         }
 
         /// <summary>

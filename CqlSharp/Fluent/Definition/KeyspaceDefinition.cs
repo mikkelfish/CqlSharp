@@ -47,12 +47,11 @@ namespace CqlSharp.Fluent.Definition
         private readonly string keyspace;
         private SimpleOption<bool> durable;
         internal MapOption replication;
-        private bool throwError;
+        private bool throwError = true;
 
         internal CqlKeyspaceDefinition(string keyspace)
         {
             this.keyspace = keyspace;
-            this.durable = new SimpleOption<bool>("durable_writes", true);
         }
 
         protected abstract string Command { get; }
@@ -85,12 +84,12 @@ namespace CqlSharp.Fluent.Definition
         {
             get 
             {
-                return String.Format("{0} KEYSPACE {1} {2} WITH {3} AND {4};", 
+                return String.Format("{0} KEYSPACE {1}{2} WITH {3}{4};", 
                     this.Command,
-                    !this.throwError ? ErrorOverwrite : "",
+                    !this.throwError ? ErrorOverwrite : String.Empty,
                     this.keyspace, 
                     this.replication.BuildString, 
-                    this.durable.BuildString);
+                    this.durable != null ? " AND " + this.durable.BuildString : String.Empty);
             }
         }
     }
@@ -129,7 +128,7 @@ namespace CqlSharp.Fluent.Definition
                 .Cast<IOption>();
 
             this.definition.replication = new MapOption("replication",
-                transformed.Union(new[] { new SimpleOption<string>("class", "SimpleStrategy") }));
+                new[] { new SimpleOption<string>("class", "NetworkTopologyStrategy") }.Union(transformed));
             return this.definition;
         }
     }

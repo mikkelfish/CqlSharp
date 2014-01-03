@@ -235,10 +235,10 @@ namespace CqlSharp.Fluent.Definition
             get 
             {
                 var toRet = new StringBuilder();
-                toRet.AppendFormat("CREATE TABLE {0} {1} (",  !this.throwError ? "IF NOT EXISTS" : "", this.tableName);
+                toRet.AppendFormat("CREATE TABLE {0}{1} (",  !this.throwError ? "IF NOT EXISTS " : String.Empty, this.tableName);
                 foreach (var col in this.columns)
                 {
-                    toRet.AppendFormat("{0} {1},", col.Key, col.Value);
+                    toRet.AppendFormat("{0} {1}, ", col.Key, col.Value);
                 }
 
                 //In CQL, the order in which columns are defined for the PRIMARY KEY matters. The first column of the key is called the partition key. 

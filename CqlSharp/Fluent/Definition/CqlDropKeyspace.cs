@@ -3,7 +3,7 @@
     public class CqlDropKeyspace: IFluentCommand
     {
         private readonly string keyspace;
-        private bool throwError;
+        private bool throwError = true;
 
         internal CqlDropKeyspace(string keyspace)
         {
