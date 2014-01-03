@@ -36,11 +36,11 @@ namespace CqlSharp.Fluent.Definition
         /// </summary>
         /// <param name="keys">The columns used for the composite partition key</param>
         /// <returns></returns>
-        public CqlCreateTableNamedAndPartitioned HasPartitionKeys(Dictionary<string, Type> keys)
+        public CqlCreateTableNamedAndPartitioned HasPartitionKeys(IEnumerable<ColumnDefinition> keys)
         {
-            foreach (var kvp in keys)
+            foreach (var key in keys)
             {
-                this.table.HasPartitionKey(kvp.Key, kvp.Value);
+                this.table.HasPartitionKey(key.ColumnName, key.Type);
             }
             return new CqlCreateTableNamedAndPartitioned(this.table);
         }
@@ -64,6 +64,21 @@ namespace CqlSharp.Fluent.Definition
         public CqlCreateTableNamedAndPartitioned AddClusteringKey(string name, Type type)
         {
             this.table.AddClusteringKey(name, type);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds columns used within the primary key (along with the partition key(s) previously defined.  On a given physical node, rows for a given partition key are stored in the order induced by
+        /// the clustering columns, making the retrieval of rows in that clustering order particularly efficient.
+        /// </summary>
+        /// <param name="keys">The keys to add</param>
+        /// <returns></returns>
+        public CqlCreateTableNamedAndPartitioned AddClusteringKeys(IEnumerable<ColumnDefinition> keys)
+        {
+            foreach (var key in keys)
+            {
+                this.table.AddClusteringKey(key.ColumnName, key.Type);
+            }
             return this;
         }
 
@@ -96,6 +111,22 @@ namespace CqlSharp.Fluent.Definition
         public CqlCreateTableColumnDefiner AddColumn(string name, Type type)
         {
             this.table.AddColumn(name, type);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds (non-primary key) columns. When inserting a given row, not all columns needs to be defined (except for those part of the key), 
+        /// and missing columns occupy no space on disk. Furthermore, adding new columns is a constant time operation. 
+        /// There is thus no need to try to anticipate future usage (or to cry when you haven’t) when creating a table.
+        /// </summary>
+        /// <param name="definitions">The columns to add</param>
+        /// <returns></returns>
+        public CqlCreateTableColumnDefiner AddColumns(IEnumerable<ColumnDefinition> definitions)
+        {
+            foreach (var definition in definitions)
+            {
+                this.table.AddColumn(definition.ColumnName, definition.Type);
+            }
             return this;
         }
 

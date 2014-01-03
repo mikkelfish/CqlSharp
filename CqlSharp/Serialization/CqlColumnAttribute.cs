@@ -44,7 +44,7 @@ namespace CqlSharp.Serialization
         ///   Gets or sets the Cql type of the column (only necessary if it is used as PartitionKey)
         /// </summary>
         /// <value> The type of the CQL. </value>
-        public CqlType CqlType { get; set; }
+        public CqlType? CqlType { get; set; }
 
         /// <summary>
         ///   Gets or sets the index of column in the partition key.
@@ -53,8 +53,13 @@ namespace CqlSharp.Serialization
         public int PartitionKeyIndex { get; set; }
 
         /// <summary>
-        /// Gets or sets the index of the column in the clustering keys
+        /// Gets or sets the index of the column in the clustering keys. This only makes sense if the column is not a partition key.
         /// </summary>
         public int ClusteringKeyIndex { get; set; }
+
+        /// <summary>
+        /// Gets or sets the index name to use for a secondary index of the column. This only makes sense if the column is not a partition key or clustering key.
+        /// </summary>
+        public string IndexName { get; set; }
     }
 }

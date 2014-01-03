@@ -37,8 +37,9 @@ namespace CqlSharp.Serialization
 
         private readonly Func<T, object>[] _partitionKeyReadFuncs;
         private readonly CqlType[] _partitionKeyTypes;
-        private readonly string[] _partitionKeyNames;
-        private readonly string[] _clusteringKeyNames;
+        private readonly ColumnDefinition[] _partitionKeyNames;
+        private readonly ColumnDefinition[] _clusteringKeyNames;
+        private readonly ColumnDefinition[] _normalColumns;
 
         /// <summary>
         ///   Read functions to used to read member or property values
@@ -59,8 +60,9 @@ namespace CqlSharp.Serialization
             _writeFuncs = new Dictionary<string, Action<T, object>>();
             _readFuncs = new Dictionary<string, Func<T, object>>();
 
-            var keyMembers = new List<Tuple<int, string, Func<T, object>, CqlType>>();
-            var clusteringMembers = new List<Tuple<int, string>>();
+            var keyMembers = new List<Tuple<int, string, Func<T, object>, Type>>();
+            var clusteringMembers = new List<Tuple<int, string, Type>>();
+            var normalMembers = new List<ColumnDefinition>();
 
             //set default keyspace and table name to empty strings (nothing)
             string keyspace = null;
@@ -98,12 +100,14 @@ namespace CqlSharp.Serialization
                 if (string.IsNullOrEmpty(name))
                     continue;
 
+                var primaryKey = false;
+
                 //add the read func if we can read the property
                 if (prop.CanRead && !prop.GetMethod.IsPrivate)
                 {
                     var getter = MakeGetterDelegate(prop);
                     AddReadFunc(getter, name, table, keyspace);
-                    SetPartitionKeyMember(keyMembers, prop, getter);
+                    primaryKey =  SetPartitionKeyMember(keyMembers, prop, getter);
                 }
 
                 //add write func if we can write the property
@@ -113,9 +117,14 @@ namespace CqlSharp.Serialization
                     AddWriteFunc(setter, name, table, keyspace);
                 }
 
-                var clustering = GetClusteringKeyIndex(prop);
-                if (clustering > 0)
-                    clusteringMembers.Add(new Tuple<int, string>(clustering, name));
+                if (!primaryKey)
+                {
+                    primaryKey = GetClusteringKey(clusteringMembers, name, prop);
+                    if (!primaryKey)
+                    {
+                        getNormalColumn(prop, normalMembers, name);
+                    }
+                }
             }
 
             //go over all fields
@@ -128,10 +137,12 @@ namespace CqlSharp.Serialization
                 if (string.IsNullOrEmpty(name))
                     continue;
 
+                var primaryKey = false;
+
                 //set getter functions
                 var getter = MakeFieldGetterDelegate(field);
                 AddReadFunc(getter, name, table, keyspace);
-                SetPartitionKeyMember(keyMembers, field, getter);
+                primaryKey = SetPartitionKeyMember(keyMembers, field, getter);
 
                 //set setter functions if not readonly
                 if (!field.IsInitOnly)
@@ -140,17 +151,31 @@ namespace CqlSharp.Serialization
                     AddWriteFunc(setter, name, table, keyspace);
                 }
 
-                var clustering = GetClusteringKeyIndex(field);
-                if (clustering > 0)
-                    clusteringMembers.Add(new Tuple<int, string>(clustering, name));
+                if (!primaryKey)
+                {
+                    primaryKey = GetClusteringKey(clusteringMembers, name, field);
+                    if (!primaryKey)
+                    {
+                        getNormalColumn(field, normalMembers, name);
+                    }
+                }
             }
 
             //sort keyMembers on partitionIndex
             keyMembers.Sort((a, b) => a.Item1.CompareTo(b.Item1));
-            _partitionKeyNames = keyMembers.Select(km => km.Item2).ToArray();
+            _partitionKeyNames = keyMembers.Select(km => new ColumnDefinition(km.Item2, km.Item4)).ToArray();
             _partitionKeyReadFuncs = keyMembers.Select(km => km.Item3).ToArray();
-            _partitionKeyTypes = keyMembers.Select(km => km.Item4).ToArray();
-            _clusteringKeyNames = clusteringMembers.OrderBy(cm => cm.Item1).Select(cm => cm.Item2).ToArray();
+            _partitionKeyTypes = keyMembers.Select(km => km.Item4.ToCqlType()).ToArray();
+            _clusteringKeyNames = clusteringMembers.OrderBy(cm => cm.Item1).Select(cm =>  new ColumnDefinition(cm.Item2, cm.Item3)).ToArray();
+            _normalColumns = normalMembers.ToArray();
+        }
+
+        private static void getNormalColumn(MemberInfo member, List<ColumnDefinition> normalMembers, string name)
+        {
+            var columnAttribute = Attribute.GetCustomAttribute(member, typeof (CqlColumnAttribute)) as CqlColumnAttribute;
+            var index = columnAttribute != null ? columnAttribute.IndexName : null;
+            var type = member is PropertyInfo ? ((PropertyInfo)member).PropertyType : ((FieldInfo)member).FieldType;
+            normalMembers.Add(new ColumnDefinition(name, type, index));
         }
 
         public bool IsKeySpaceSet { get; private set; }
@@ -166,15 +191,17 @@ namespace CqlSharp.Serialization
             }
         }
 
-        public string[] PartitionKeys 
+        public ColumnDefinition[] PartitionKeys 
         {
             get { return this._partitionKeyNames; }
         }
 
-        public string[] ClusteringKeys
+        public ColumnDefinition[] ClusteringKeys
         {
             get { return this._clusteringKeyNames; }
         }
+
+        public ColumnDefinition[] NormalColumns {get { return this._normalColumns; } }
 
         private void AddWriteFunc(Action<T, object> setter, string column, string table, string keyspace)
         {
@@ -204,8 +231,7 @@ namespace CqlSharp.Serialization
         /// <param name="keyMembers"> The key members. </param>
         /// <param name="member"> The member. </param>
         /// <param name="reader"> The reader. </param>
-        /// <exception cref="System.ArgumentException">CqlType must be set on ColumnAttribute if PartitionKeyIndex is set.</exception>
-        private void SetPartitionKeyMember(List<Tuple<int, string, Func<T, object>, CqlType>> keyMembers, MemberInfo member,
+        private bool SetPartitionKeyMember(List<Tuple<int, string, Func<T, object>, Type>> keyMembers, MemberInfo member,
                                            Func<T, object> reader)
         {
             //check for column attribute
@@ -219,10 +245,29 @@ namespace CqlSharp.Serialization
                     //if (!columnAttribute.CqlType.HasValue)
                     //    throw new ArgumentException("CqlType must be set on ColumnAttribute if PartitionKeyIndex is set.");
 
+                    var type = getType(member);
+
                     //add the member
-                    keyMembers.Add(new Tuple<int, string, Func<T, object>, CqlType>(columnAttribute.PartitionKeyIndex, GetColumnName(member), reader, columnAttribute.CqlType));
+                    keyMembers.Add(new Tuple<int, string, Func<T, object>, Type>(columnAttribute.PartitionKeyIndex, GetColumnName(member), reader, type));
+                    return true;
                 }
             }
+            return false;
+        }
+
+        private static Type getType(MemberInfo member)
+        {
+            //var columnAttribute =
+            //   Attribute.GetCustomAttribute(member, typeof(CqlColumnAttribute)) as CqlColumnAttribute;
+            //CqlType cqlType;
+            //if (columnAttribute.CqlType.HasValue)
+            //    cqlType = columnAttribute.CqlType.Value;
+            //else 
+            Type toRet = null;
+            if (member is PropertyInfo)
+                toRet = ((PropertyInfo)member).PropertyType;
+            else toRet = ((FieldInfo)member).FieldType;
+            return toRet;
         }
 
         /// <summary>
@@ -247,13 +292,18 @@ namespace CqlSharp.Serialization
             return columnAttribute != null ? columnAttribute.Column : member.Name.ToLower();
         }
 
-        private static int GetClusteringKeyIndex(MemberInfo member)
+        private static bool GetClusteringKey(List<Tuple<int,string,Type>> clusteringKeys, string name, MemberInfo member)
         {
             //check for column attribute
             var columnAttribute =
                 Attribute.GetCustomAttribute(member, typeof(CqlColumnAttribute)) as CqlColumnAttribute;
 
-            return columnAttribute != null ? columnAttribute.ClusteringKeyIndex : -1;
+            var index = columnAttribute != null ? columnAttribute.ClusteringKeyIndex : -1;
+            if(index < 0)
+                return false;
+
+            clusteringKeys.Add(new Tuple<int, string, Type>(index, name, getType(member)));
+            return true;
         }
 
         /// <summary>

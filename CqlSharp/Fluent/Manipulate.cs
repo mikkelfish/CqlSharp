@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using CqlSharp.Fluent.Manipulation;
+using CqlSharp.Serialization;
 
 namespace CqlSharp.Fluent
 {
@@ -23,6 +24,19 @@ namespace CqlSharp.Fluent
         }
 
         /// <summary>
+        /// Prepare an insert statment for a type
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        public static CqlInsert Insert<T>()
+        {
+            var accessor = ObjectAccessor<T>.Instance;
+            return new CqlInsertNamed(accessor.KeySpaceTableAndName)
+                .With(accessor.PartitionKeys.Union(accessor.ClusteringKeys).Union(accessor.NormalColumns))
+                .Finished;
+        }
+
+        /// <summary>
         /// The UPDATE statement writes one or more columns for a given row in a table. The where clause is used to select the row to update 
         /// and must include all columns composing the PRIMARY KEY (the IN relation is only supported for the last column of the partition key). 
         /// Other columns values are specified through the set clauses.
@@ -32,6 +46,45 @@ namespace CqlSharp.Fluent
         public static CqlUpdateNamed Update(string tableName)
         {
             return new CqlUpdateNamed(tableName);
+        }
+
+        /// <summary>
+        /// Creates a basic update statement with a Where for all primary keys and a set for all other columns
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        public static CqlUpdate Update<T>()
+        {
+            var accessor = ObjectAccessor<T>.Instance;
+            var toRet = new CqlUpdateNamed(accessor.KeySpaceTableAndName);
+            foreach (var col in accessor.NormalColumns)
+            {
+                toRet = toRet.AddAssignment(col.ColumnName);
+            }
+
+            var finishedSet = toRet.FinishedSet;
+            foreach (var col in accessor.PartitionKeys.Union(accessor.ClusteringKeys))
+            {
+                finishedSet = finishedSet.AddWhere(col.ColumnName);
+            }
+
+            return finishedSet.FinishedWhere;
+        }
+
+        /// <summary>
+        /// Use to attach all the primary keys to an update statement with a custom set statement
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="set"></param>
+        /// <returns></returns>
+        public static CqlUpdate WithStandardWhere<T>(this CqlUpdateNamedSet set)
+        {
+            var accessor = ObjectAccessor<T>.Instance;
+            foreach (var col in accessor.PartitionKeys.Union(accessor.ClusteringKeys))
+            {
+                set = set.AddWhere(col.ColumnName);
+            }
+            return set.FinishedWhere;
         }
 
         /// <summary>

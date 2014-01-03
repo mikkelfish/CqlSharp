@@ -1,4 +1,5 @@
-﻿using CqlSharp.Fluent.Definition;
+﻿using System.Linq;
+using CqlSharp.Fluent.Definition;
 using CqlSharp.Serialization;
 
 namespace CqlSharp.Fluent
@@ -62,11 +63,21 @@ namespace CqlSharp.Fluent
             return new CqlCreateTableNamed(name);
         }
 
+        /// <summary>
+        /// Creates a table based on the given type. 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
         public static CqlCreateTable CreateTable<T>()
         {
             var accessor = ObjectAccessor<T>.Instance;
-            var named = CreateTable(accessor.KeySpaceTableAndName);
-            
+            return CreateTable(accessor.KeySpaceTableAndName)
+                .HasPartitionKeys(accessor.PartitionKeys)
+                .AddClusteringKeys(accessor.ClusteringKeys)
+                .FinishedClusteringKeys
+                .AddColumns(accessor.NormalColumns)
+                .FinishedDefiningColumns;
+
         }
 
         /// <summary>
@@ -90,6 +101,17 @@ namespace CqlSharp.Fluent
         }
 
         /// <summary>
+        /// Drops the table associated with the type
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        public static CqlDropTable DropTable<T>()
+        {
+            var accessor = ObjectAccessor<T>.Instance;
+            return new CqlDropTable(accessor.KeySpaceTableAndName);
+        }
+
+        /// <summary>
         /// The TRUNCATE statement permanently removes all data from a table.
         /// </summary>
         /// <param name="tableName">The name of the table to truncate</param>
@@ -97,6 +119,17 @@ namespace CqlSharp.Fluent
         public static CqlTruncate TruncateTable(string tableName)
         {
             return new CqlTruncate(tableName);
+        }
+
+        /// <summary>
+        /// Removes all data from the table associated with the type
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        public static CqlTruncate TruncateTable<T>()
+        {
+            var accessor = ObjectAccessor<T>.Instance;
+            return new CqlTruncate(accessor.KeySpaceTableAndName);
         }
 
         /// <summary>
@@ -109,6 +142,19 @@ namespace CqlSharp.Fluent
         public static CqlIndexNamed CreateIndex(string tableName)
         {
             return new CqlIndexNamed(tableName);
+        }
+
+        /// <summary>
+        /// Create secondary indexes on all columns that have them defined as an attribute
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        public static CqlIndex[] CreateIndexes<T>()
+        {
+            var accessor = ObjectAccessor<T>.Instance;
+            return accessor.NormalColumns.Where(c => c.IndexName != null)
+                    .Select(c => new CqlIndexNamed(accessor.KeySpaceTableAndName)
+                    .OnColumn(c.ColumnName).WithName(c.IndexName)).ToArray();
         }
 
         /// <summary>

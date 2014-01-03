@@ -196,6 +196,7 @@ namespace CqlSharp.Fluent.Querying
 
         }
 
+
         private CqlSelectNamedAndSelected addRange(string colName, string customParameterName, RangeOperator operation)
         {
             var para = this.getPara(customParameterName);
@@ -210,7 +211,7 @@ namespace CqlSharp.Fluent.Querying
         /// <param name="colName">The name of the column to compare</param>
         /// <param name="valueParameterName">The name given to the value parameter</param>
         /// <returns></returns>
-        public CqlSelectNamedAndSelected AddWhereRangeLessThan(string colName, string valueParameterName)
+        public CqlSelectNamedAndSelected AddWhereRangeLessThan(string colName, string valueParameterName = null)
         {
             return addRange(colName, valueParameterName, RangeOperator.LessThan);
         }
@@ -222,7 +223,7 @@ namespace CqlSharp.Fluent.Querying
         /// <param name="colName">The name of the column to compare</param>
         /// <param name="valueParameterName">The name given to the value parameter</param>
         /// <returns></returns>
-        public CqlSelectNamedAndSelected AddWhereRangeGreaterThan(string colName, string valueParameterName)
+        public CqlSelectNamedAndSelected AddWhereRangeGreaterThan(string colName, string valueParameterName = null)
         {
             return addRange(colName, valueParameterName, RangeOperator.GreaterThan);
         }
@@ -234,7 +235,7 @@ namespace CqlSharp.Fluent.Querying
         /// <param name="colName">The name of the column to compare</param>
         /// <param name="valueParameterName">The name given to the value parameter</param>
         /// <returns></returns>
-        public CqlSelectNamedAndSelected AddWhereRangeLessThanEqual(string colName, string valueParameterName)
+        public CqlSelectNamedAndSelected AddWhereRangeLessThanEqual(string colName, string valueParameterName = null)
         {
             return addRange(colName, valueParameterName, RangeOperator.LessThanEqual);
         }
@@ -246,7 +247,7 @@ namespace CqlSharp.Fluent.Querying
         /// <param name="colName">The name of the column to compare</param>
         /// <param name="valueParameterName">The name given to the value parameter</param>
         /// <returns></returns>
-        public CqlSelectNamedAndSelected AddWhereRangeGreaterThanEqual(string colName, string valueParameterName)
+        public CqlSelectNamedAndSelected AddWhereRangeGreaterThanEqual(string colName, string valueParameterName = null)
         {
             return addRange(colName, valueParameterName, RangeOperator.GreaterThanEqual);
         }
@@ -263,7 +264,7 @@ namespace CqlSharp.Fluent.Querying
         /// <param name="operation">The comparison operator</param>
         /// <param name="valueParameterName">The name of the parameter for the value to compare</param>
         /// <returns></returns>
-        public CqlSelectNamedAndSelected AddWhereToken(string[] partitionColumns, RangeOperator operation, string valueParameterName)
+        public CqlSelectNamedAndSelected AddWhereToken(string[] partitionColumns, RangeOperator operation, string valueParameterName = null)
         {
             var para = this.getPara(valueParameterName);
             (this.update as IHasWhere<CqlSelect>).AddWhere(new TokenWhere(partitionColumns, para, operation));

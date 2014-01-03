@@ -133,7 +133,7 @@ namespace CqlSharp.Fluent.Manipulation
         /// <param name="keyParameterName">The key parameter name</param>
         /// <param name="valueParameterName">The value parameter name</param>
         /// <returns></returns>
-        public CqlUpdateNamed AddMapSet(string colName, string keyParameterName, string valueParameterName)
+        public CqlUpdateNamed AddMapSet(string colName, string keyParameterName = null, string valueParameterName = null)
         {
             var keyPara = this.getPara(keyParameterName);
             var valPara = this.getPara(keyParameterName);
@@ -148,7 +148,7 @@ namespace CqlSharp.Fluent.Manipulation
         /// <param name="keyParameterName">The key parameter name</param>
         /// <param name="valueParameterName">The value parameter name</param>
         /// <returns></returns>
-        public CqlUpdateNamed AddMapItem(string colName, string keyParameterName, string valueParameterName)
+        public CqlUpdateNamed AddMapItem(string colName, string keyParameterName = null, string valueParameterName = null)
         {
             var keyPara = this.getPara(keyParameterName);
             var valPara = this.getPara(keyParameterName);
@@ -189,8 +189,9 @@ namespace CqlSharp.Fluent.Manipulation
         /// <param name="colName">The name of the column</param>
         /// <param name="parameterName">The name of the parameter</param>
         /// <returns></returns>
-        public CqlUpdateNamedSetAndWhere AddIf(string colName, string parameterName)
+        public CqlUpdateNamedSetAndWhere AddIf(string colName, string parameterName = null)
         {
+            parameterName = parameterName == null ? "?" : ":" + parameterName;
             this.update.AddIf(new SimpleWhere(colName, parameterName));
             return this;
         }

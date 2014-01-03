@@ -39,6 +39,20 @@ namespace CqlSharp.Fluent.Manipulation
         }
 
         /// <summary>
+        /// Specify columns that will be instered
+        /// </summary>
+        /// <param name="definitions"></param>
+        /// <returns></returns>
+        public CqlInsertNamed With(IEnumerable<ColumnDefinition> definitions)
+        {
+            foreach (var definition in definitions)
+            {
+                this.insert.With(definition.ColumnName);
+            }
+            return this;
+        }
+
+        /// <summary>
         /// Use when all insert columns have been defined. Ensure all columns making up the primary key and at least one value have been defined
         /// </summary>
         public CqlInsert Finished

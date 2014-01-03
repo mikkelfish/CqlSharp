@@ -14,6 +14,11 @@ namespace CqlSharp.Fluent.Manipulation
             this.delete = new CqlDelete(tableName);
         }
 
+        private string getPara(string customParameterName)
+        {
+            return customParameterName == null ? "?" : ":" + customParameterName;
+        }
+
         /// <summary>
         /// Delete a column from the row
         /// </summary>
@@ -31,9 +36,10 @@ namespace CqlSharp.Fluent.Manipulation
         /// <param name="mapName">The name of the map</param>
         /// <param name="keyParameter">The parameter representing the key to remove</param>
         /// <returns></returns>
-        public CqlDeleteNamed DeleteMapEntry(string mapName, string keyParameter)
+        public CqlDeleteNamed DeleteMapEntry(string mapName, string keyParameter = null)
         {
-            this.delete.AddToDelete(String.Format("{0}[:{1}]", mapName, keyParameter));
+            keyParameter = this.getPara(keyParameter);
+            this.delete.AddToDelete(String.Format("{0}[{1}]", mapName, keyParameter));
             return this;
         }
 
@@ -43,9 +49,10 @@ namespace CqlSharp.Fluent.Manipulation
         /// <param name="listName">The name of the list</param>
         /// <param name="indexParameter">The parameter representing the index</param>
         /// <returns></returns>
-        public CqlDeleteNamed DeleteListEntry(string listName, string indexParameter)
+        public CqlDeleteNamed DeleteListEntry(string listName, string indexParameter = null)
         {
-            this.delete.AddToDelete(String.Format("{0}[:{1}]", listName, indexParameter));
+            indexParameter = this.getPara(indexParameter);
+            this.delete.AddToDelete(String.Format("{0}[{1}]", listName, indexParameter));
             return this;
         }
 
