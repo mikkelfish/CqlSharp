@@ -31,7 +31,8 @@ namespace CqlSharp.Fluent.Definition
                 var val = this.Value.ToString();
                 if (this.Value is string)
                     val = "'" + val + "'";
-                return String.Format("{0} = {1}", this.Name, val.ToLower());
+                else val = val.ToLower();
+                return String.Format("{0} = {1}", this.Name, val);
             }
         }
 

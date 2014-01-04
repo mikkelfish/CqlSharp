@@ -44,13 +44,13 @@ namespace CqlSharp.Fluent.Definition
         {
             get
             {
-                return String.Format("CREATE {0} INDEX {1} {2} ON {3} ({4}){5};",
-                    this.indexClass != null ? "CUSTOM" : "",
-                    !this.throwOnError ? "IF NOT EXISTS" : "",
-                    this.indexName ?? "",
+                return String.Format("CREATE {0}INDEX {1}{2}ON {3} ({4}){5};",
+                    this.indexClass != null ? "CUSTOM " : String.Empty,
+                    !this.throwOnError ? "IF NOT EXISTS " : String.Empty,
+                    this.indexName != null ?  this.indexName + " " : String.Empty,
                     this.tableName,
                     this.columnName,
-                    (this.indexClass != null ? " USING '" + this.indexClass + "'" : "")
+                    (this.indexClass != null ? " USING '" + this.indexClass + "'" : String.Empty)
                     );
             }
         }

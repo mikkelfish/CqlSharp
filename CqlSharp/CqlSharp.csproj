@@ -64,6 +64,7 @@
     <Compile Include="Fluent\Definition\CqlUse.cs" />
     <Compile Include="Fluent\Definition\KeyspaceDefinition.cs" />
     <Compile Include="Fluent\Definition\TableBase.cs" />
+    <Compile Include="Fluent\Utilities.cs" />
     <Compile Include="Fluent\IFluentCommand.cs" />
     <Compile Include="Fluent\Definition\IOption.cs" />
     <Compile Include="Fluent\Definition\MapOption.cs" />
@@ -81,7 +82,7 @@
     <Compile Include="CqlSchemaTableColumnNames.cs" />
     <Compile Include="DiscoveryScope.cs" />
     <Compile Include="Extensions\Loader.cs" />
-    <Compile Include="Fluent\Manipulate.cs" />
+    <Compile Include="Fluent\Modify.cs" />
     <Compile Include="Fluent\Manipulation\CqlBatch.cs" />
     <Compile Include="Fluent\Manipulation\CqlDelete.cs" />
     <Compile Include="Fluent\Manipulation\CqlInsert.cs" />

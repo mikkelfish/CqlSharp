@@ -299,7 +299,7 @@ namespace CqlSharp.Serialization
                 Attribute.GetCustomAttribute(member, typeof(CqlColumnAttribute)) as CqlColumnAttribute;
 
             var index = columnAttribute != null ? columnAttribute.ClusteringKeyIndex : -1;
-            if(index < 0)
+            if(index <= 0)
                 return false;
 
             clusteringKeys.Add(new Tuple<int, string, Type>(index, name, getType(member)));

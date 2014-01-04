@@ -165,7 +165,7 @@ namespace CqlSharp.Fluent.Definition
 
         public string BuildString
         {
-            get { return String.Format("ALTER TABLE {0} {1};", this.tableName, this.getOptionString()); }
+            get { return String.Format("ALTER TABLE {0}{1};", this.tableName, this.getOptionString()); }
         }
     }
 }

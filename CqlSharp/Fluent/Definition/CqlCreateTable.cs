@@ -160,7 +160,7 @@ namespace CqlSharp.Fluent.Definition
         private readonly Dictionary<string, string> columns = new Dictionary<string, string>();
         private readonly List<string> clusteringKeys = new List<string>();
         private readonly List<string> partitionKeys = new List<string>();
-        
+        private bool hasValueColumn = false;
 
         internal CqlCreateTable(string tableName)
         {
@@ -195,6 +195,7 @@ namespace CqlSharp.Fluent.Definition
         /// <returns></returns>
         internal CqlCreateTable AddColumn(string name, Type type)
         {
+            this.hasValueColumn = true;
             return this.addColumn(name, type, false);
         }
 
@@ -206,6 +207,7 @@ namespace CqlSharp.Fluent.Definition
         /// <returns></returns>
         internal CqlCreateTable AddColumnCustomJavaType(string name, string qualifiedName)
         {
+            this.hasValueColumn = true;
             if (!this.columns.ContainsKey(name))
             {
                 this.columns.Add(name, qualifiedName);
@@ -246,27 +248,34 @@ namespace CqlSharp.Fluent.Definition
                 //Also, insertion/update/deletion on rows sharing the same partition key for a given table are performed atomically and in isolation. 
                 //Note that it is possible to have a composite partition key, i.e. a partition key formed of multiple columns, using an extra set of 
                 //parentheses to define which columns forms the partition key.
-                toRet.Append("PRIMARY KEY ( ");
+
+                if (this.partitionKeys.Count == 0)
+                    throw new InvalidOperationException("There must be a PartitionKey");
+
+                if (!this.hasValueColumn)
+                    throw new InvalidOperationException("There must be at least one value column (not a clustering or partition key)");
+
+                toRet.Append("PRIMARY KEY (");
                 if (this.partitionKeys.Count == 1)
                     toRet.Append(this.partitionKeys.Single());
                 else
                 {
-                    toRet.Append(" ( ");
+                    toRet.Append("(");
                     for (int i = 0; i < this.partitionKeys.Count - 1; i++)
                     {
                         toRet.AppendFormat("{0}, ", this.partitionKeys[i]);
                     }
 
-                    toRet.AppendFormat("{0} )", this.partitionKeys.Last());
+                    toRet.AppendFormat("{0})", this.partitionKeys.Last());
                 }
 
                 foreach (var clustering in clusteringKeys)
                 {
                     toRet.AppendFormat(", {0}", clustering);
                 }
-                toRet.Append(" )"); //close PRIMARY KEY
+                toRet.Append(")"); //close PRIMARY KEY
 
-                toRet.Append(" )"); //close CREATE TABLE
+                toRet.Append(")"); //close CREATE TABLE
 
                 if (!this.clusteringOrder && !this.compactStorage && this.options.Count == 0)
                 {
@@ -275,6 +284,8 @@ namespace CqlSharp.Fluent.Definition
                 }
 
                 toRet.Append(this.getOptionString());
+
+                toRet.Append(";");
                 return toRet.ToString();
             }
         }

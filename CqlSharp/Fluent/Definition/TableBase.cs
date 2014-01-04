@@ -16,7 +16,7 @@ namespace CqlSharp.Fluent.Definition
         {
             var toRet = new StringBuilder();
             var hasOption = false;
-            toRet.Append("WITH ");
+            toRet.Append(" WITH ");
             if (this.clusteringOrder)
             {
                 toRet.Append("CLUSTERING ORDER");
@@ -33,7 +33,6 @@ namespace CqlSharp.Fluent.Definition
 
             if (this.options.Count == 0)
             {
-                toRet.Append(";");
                 return toRet.ToString(); //We have no more options so we're done
             }
 
@@ -150,7 +149,7 @@ namespace CqlSharp.Fluent.Definition
             if (tombstoneThreshold != 0.2)
                 toInclude.Add(new SimpleOption<double>("tombstone_threshold", tombstoneThreshold, tt => tt >= 0 && tt <= 1));
             if (tombstoneCompactionInterval != 86400)
-                toInclude.Add(new SimpleOption<double>("tombstone_compaction_interval", tombstoneCompactionInterval, tt => tt >= 0));
+                toInclude.Add(new SimpleOption<double>("tombstone_compaction_interval", tombstoneCompactionInterval, tt => tt > 0));
             if (ssTableSize != 5)
                 toInclude.Add(new SimpleOption<int>("sstable_size_in_mb", ssTableSize, ss => ss > 0));
             this.options.Add(new MapOption("compaction", toInclude));
@@ -219,11 +218,11 @@ namespace CqlSharp.Fluent.Definition
         {
             var toInclude = new List<IOption>();
             if (algorithm != "SnappyCompressor")
-                this.options.Add(new SimpleOption<string>("sstable_compression", algorithm));
+                toInclude.Add(new SimpleOption<string>("sstable_compression", algorithm));
             if (chunkLength != 64)
-                this.options.Add(new SimpleOption<int>("chunk_length_kb", chunkLength));
+                toInclude.Add(new SimpleOption<int>("chunk_length_kb", chunkLength));
             if (crcCheckChance != 1.0)
-                this.options.Add(new SimpleOption<double>("crc_check_chance", crcCheckChance, ccc => ccc >= 0 && ccc <= 1.0));
+                toInclude.Add(new SimpleOption<double>("crc_check_chance", crcCheckChance, ccc => ccc >= 0 && ccc <= 1.0));
 
             this.options.Add(new MapOption("compression", toInclude));
             return this as T;

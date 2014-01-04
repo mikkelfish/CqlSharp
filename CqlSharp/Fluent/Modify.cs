@@ -8,7 +8,7 @@ using CqlSharp.Serialization;
 
 namespace CqlSharp.Fluent
 {
-    public static class Manipulate
+    public static class Modify
     {
         /// <summary>
         /// The INSERT statement writes one or more columns for a given row in a table. Note that since a row is identified by its PRIMARY KEY, the columns that compose it must be specified. 
@@ -47,6 +47,7 @@ namespace CqlSharp.Fluent
         {
             return new CqlUpdateNamed(tableName);
         }
+
 
         /// <summary>
         /// Creates a basic update statement with a Where for all primary keys and a set for all other columns

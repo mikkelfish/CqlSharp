@@ -37,7 +37,6 @@ namespace CqlSharp.Fluent.Manipulation
     public class CqlBatch : IFluentCommand
     {
         private readonly List<IManipulation> manipulations = new List<IManipulation>();
-        private long timestamp = 0;
 
         internal CqlBatch()
         {
@@ -50,15 +49,21 @@ namespace CqlSharp.Fluent.Manipulation
             return this;
         }
 
+        private string timestampParameter = null;
+
+        private string getPara(string customParameterName)
+        {
+            return customParameterName == null ? "?" : ":" + customParameterName;
+        }
+
         /// <summary>
-        /// Set the timestamp. If not specified, the current time of the insertion (in microseconds) is used. This is usually a suitable default. 
         /// The timestamp applies to all the statement inside the batch. However, if used, TIMESTAMP must not be used in the statements within the batch.
         /// </summary>
-        /// <param name="time">The timestamp</param>
+        /// <param name="parameter">The timestampParameter</param>
         /// <returns></returns>
-        public CqlBatch WithTimestamp(long time)
+        public CqlBatch WithTimestamp(string parameter = null)
         {
-            this.timestamp = time;
+            this.timestampParameter = this.getPara(parameter);
             return this;
         }
 
@@ -70,9 +75,9 @@ namespace CqlSharp.Fluent.Manipulation
                 var toRet = new StringBuilder();
                 toRet.Append("BEGIN BATCH ");
 
-                if (this.timestamp != 0)
+                if (this.timestampParameter != null)
                 {
-                    toRet.AppendFormat("USING TIMESTAMP {0} ", this.timestamp);
+                    toRet.AppendFormat("USING TIMESTAMP {0} ", this.timestampParameter);
                 }
 
                 foreach (var manipulation in this.manipulations)

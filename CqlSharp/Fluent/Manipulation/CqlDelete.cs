@@ -80,7 +80,12 @@ namespace CqlSharp.Fluent.Manipulation
         private readonly string tableName;
         private readonly List<string> toDelete = new List<string>();
         private readonly List<IWhere> whereStatements = new List<IWhere>();
-        private long timestamp = 0;
+        private string timestampParameter = null;
+
+        private string getPara(string customParameterName)
+        {
+            return customParameterName == null ? "?" : ":" + customParameterName;
+        }
 
         internal CqlDelete(string tableName)
         {
@@ -102,11 +107,11 @@ namespace CqlSharp.Fluent.Manipulation
         /// <summary>
         /// Set the timestamp. If not specified, the current time of the insertion (in microseconds) is used. This is usually a suitable default.
         /// </summary>
-        /// <param name="time">The timestamp</param>
+        /// <param name="parameter">The timestampParameter</param>
         /// <returns></returns>
-        public CqlDelete WithTimestamp(long time)
+        public CqlDelete WithTimestamp(string parameter = null)
         {
-            this.timestamp = time;
+            this.timestampParameter = this.getPara(parameter);
             return this;
         }
 
@@ -127,9 +132,9 @@ namespace CqlSharp.Fluent.Manipulation
 
                 toRet.AppendFormat("FROM {0} ", this.tableName);
 
-                if (timestamp != 0)
+                if (this.timestampParameter != null)
                 {
-                    toRet.AppendFormat("USING TIMESTAMP {0} ", timestamp);
+                    toRet.AppendFormat("USING TIMESTAMP {0} ", this.timestampParameter);
                 }
 
                 toRet.Append("WHERE ");

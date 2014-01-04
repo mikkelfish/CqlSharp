@@ -32,8 +32,8 @@ namespace CqlSharp.Fluent.Definition
 
         public string BuildString
         {
-            get { return String.Format("DROP TABLE {0} {1};",
-                !this.throwError ? "IF EXISTS" : "",
+            get { return String.Format("DROP TABLE {0}{1};",
+                !this.throwError ? "IF EXISTS " : "",
                 this.tableName); }
         }
     }

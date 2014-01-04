@@ -153,7 +153,7 @@ namespace CqlSharp.Fluent.Manipulation
                 {
                     toRet.AppendFormat("{0}, ", insertArray[i].Key);
                 }
-                toRet.AppendFormat("{0} )", insertArray.Last().Key);
+                toRet.AppendFormat("{0}) ", insertArray.Last().Key);
                 toRet.Append("VALUES (");
                 for (int i = 0; i < insertArray.Length - 1; i++)
                 {

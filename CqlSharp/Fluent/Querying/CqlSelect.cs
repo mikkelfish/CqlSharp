@@ -186,6 +186,14 @@ namespace CqlSharp.Fluent.Querying
             this.select.AddFunctionClause("maxTimeuuid", new[] { column });
             return this;
         }
+
+        /// <summary>
+        /// Use this after all select statements have been defined
+        /// </summary>
+        public CqlSelectNamedAndSelected FinishedSelect
+        {
+            get { return new CqlSelectNamedAndSelected(this.select); }
+        }
     }
 
     public class CqlSelectNamedAndSelected : WhereBase<CqlSelectNamedAndSelected, CqlSelect>
@@ -408,7 +416,7 @@ namespace CqlSharp.Fluent.Querying
             get 
             {
                 var toRet = new StringBuilder();
-                toRet.AppendFormat("SELECT {0} ", this.isDistinct ? "DISTINCT" : "");
+                toRet.AppendFormat("SELECT {0}", this.isDistinct ? "DISTINCT " : "");
 
                 if (!this.isCountQuery)
                 {
@@ -418,9 +426,9 @@ namespace CqlSharp.Fluent.Querying
                     {
                         for (int i = 0; i < allSelect.Length - 1; i++)
                         {
-                            toRet.AppendFormat("{0} {1}, ", allSelect[i].Key, allSelect[i].Value != null ? " AS " + allSelect[i].Value : "");
+                            toRet.AppendFormat("{0}{1}, ", allSelect[i].Key, allSelect[i].Value != null ? " AS " + allSelect[i].Value : "");
                         }
-                        toRet.AppendFormat("{0} {1}", allSelect.Last().Key, allSelect.Last().Value != null ? " AS " + allSelect.Last().Value : "");
+                        toRet.AppendFormat("{0}{1}", allSelect.Last().Key, allSelect.Last().Value != null ? " AS " + allSelect.Last().Value : "");
 
                         if (this.functions.Count > 0)
                             toRet.Append(",");
@@ -428,35 +436,38 @@ namespace CqlSharp.Fluent.Querying
 
                     if (this.functions.Count > 0)
                     {
+                        if (allSelect.Length > 0)
+                            toRet.Append(" ");
+
                         for (int i = 0; i < this.functions.Count - 1; i++)
                         {
-                            toRet.AppendFormat("{0} ( ", this.functions[i].FunctionName);
+                            toRet.AppendFormat("{0}(", this.functions[i].FunctionName);
                             for (int j = 0; j < this.functions[i].FunctionArgs.Length-1; j++)
                             {
                                 toRet.AppendFormat("{0}, ", this.functions[i].FunctionArgs[j]);
                             }
 
-                            toRet.AppendFormat("{0} ), ", this.functions[i].FunctionArgs.Last());
+                            toRet.AppendFormat("{0}), ", this.functions[i].FunctionArgs.Last());
                         }
 
-                        toRet.AppendFormat("{0} ( ", this.functions.Last().FunctionName);
+                        toRet.AppendFormat("{0}(", this.functions.Last().FunctionName);
                         for (int j = 0; j < this.functions.Last().FunctionArgs.Length - 1; j++)
                         {
                             toRet.AppendFormat("{0}, ", this.functions.Last().FunctionArgs[j]);
                         }
 
-                        toRet.AppendFormat("{0} ) ", this.functions.Last().FunctionArgs.Last());
+                        toRet.AppendFormat("{0})", this.functions.Last().FunctionArgs.Last());
                     }
 
                     if (allSelect.Length == 0 && this.functions.Count == 0)
-                        toRet.Append("* ");
+                        toRet.Append("*");
                 }
                 else
                 {
-                    toRet.AppendFormat("COUNT (*) {0} ", this.countAlias != null ? "AS " + this.countAlias : "");
+                    toRet.AppendFormat("COUNT(*){0}", this.countAlias != null ? " AS " + this.countAlias : String.Empty);
                 }
 
-                toRet.AppendFormat(" FROM {0} ", this.tableName);
+                toRet.AppendFormat(" FROM {0}", this.tableName);
 
                 if (this.whereStmts.Count > 0)
                 {
@@ -465,24 +476,25 @@ namespace CqlSharp.Fluent.Querying
                     {
                         toRet.AppendFormat("{0} AND ", this.whereStmts[i].WhereString);
                     }
-                    toRet.AppendFormat("{0} ", this.whereStmts.Last().WhereString);
+                    toRet.AppendFormat("{0}", this.whereStmts.Last().WhereString);
                 }
 
 
                 if (this.orderBy.Count != 0)
                 {
+                    toRet.Append(" ORDER BY ");
                     for (int i = 0; i < this.orderBy.Count - 1; i++)
                     {
                         toRet.AppendFormat("{0} {1}, ", this.orderBy[i].Column, this.orderBy[i].Descending ? "DESC" : "ASC");
                     }
-                    toRet.AppendFormat("{0} {1} ", this.orderBy.Last().Column, this.orderBy.Last().Descending ? "DESC" : "ASC");
+                    toRet.AppendFormat("{0} {1}", this.orderBy.Last().Column, this.orderBy.Last().Descending ? "DESC" : "ASC");
                 }
 
                 if (this.limit != 0)
-                    toRet.AppendFormat("LIMIT {0} ", this.limit);
+                    toRet.AppendFormat(" LIMIT {0}", this.limit);
 
                 if (this.allowFiltering)
-                    toRet.Append("ALLOW FILTERING");
+                    toRet.Append(" ALLOW FILTERING");
 
                 toRet.Append(";");
 

@@ -31,8 +31,8 @@ namespace CqlSharp.Fluent.Definition
         {
             get
             {
-                return String.Format("DROP INDEX {0} {1};",
-                    !this.throwOnError ? "IF EXISTS" : "",
+                return String.Format("DROP INDEX {0}{1};",
+                    !this.throwOnError ? "IF EXISTS " : "",
                     this.indexName);
             }
         }

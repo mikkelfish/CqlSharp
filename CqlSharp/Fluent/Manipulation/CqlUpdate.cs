@@ -136,7 +136,7 @@ namespace CqlSharp.Fluent.Manipulation
         public CqlUpdateNamed AddMapSet(string colName, string keyParameterName = null, string valueParameterName = null)
         {
             var keyPara = this.getPara(keyParameterName);
-            var valPara = this.getPara(keyParameterName);
+            var valPara = this.getPara(valueParameterName);
             this.update.AddAssignment(new CqlUpdate.Indexed(colName, keyPara, valPara));
             return this;
         }
@@ -145,14 +145,12 @@ namespace CqlSharp.Fluent.Manipulation
         /// Use this for adding an item to a map, e.g. map.Add(?,?)
         /// </summary>
         /// <param name="colName">The name of the map to add to</param>
-        /// <param name="keyParameterName">The key parameter name</param>
         /// <param name="valueParameterName">The value parameter name</param>
         /// <returns></returns>
-        public CqlUpdateNamed AddMapItem(string colName, string keyParameterName = null, string valueParameterName = null)
+        public CqlUpdateNamed AddMapItem(string colName,string valueParameterName = null)
         {
-            var keyPara = this.getPara(keyParameterName);
-            var valPara = this.getPara(keyParameterName);
-            this.update.AddAssignment(new CqlUpdate.MapAdd(colName, keyPara, valPara));
+            var valPara = this.getPara(valueParameterName);
+            this.update.AddAssignment(new CqlUpdate.MapAdd(colName,valPara));
             return this;
         }
 
@@ -312,12 +310,10 @@ namespace CqlSharp.Fluent.Manipulation
         {
              private readonly string colName;
             private readonly string valParam;
-            private readonly string keyParam;
 
-            public MapAdd(string colname, string lookupParam, string valParam)
+            public MapAdd(string colname, string valParam)
             {
                 this.colName = colname;
-                this.keyParam = lookupParam;
                 this.valParam = valParam;
             }
 
@@ -326,10 +322,7 @@ namespace CqlSharp.Fluent.Manipulation
                 get
                 {
                     var toRet = new StringBuilder();
-                    toRet.AppendFormat("{0} = ", this.colName);
-                    toRet.Append("{");
-                    toRet.AppendFormat("{0} : {1}", this.keyParam, this.valParam);
-                    toRet.Append("}");
+                    toRet.AppendFormat("{0} = {0} + {1}", this.colName, this.valParam);
                     return toRet.ToString();
                 }
             }
@@ -399,8 +392,13 @@ namespace CqlSharp.Fluent.Manipulation
         private readonly List<IAssign> toSet = new List<IAssign>();
         private readonly List<IWhere> whereClauses = new List<IWhere>();
         private readonly List<SimpleWhere> ifClauses = new List<SimpleWhere>();
-        private long timestamp = 0;
-        private long ttl = 0;
+        private string timestampParameter = null;
+        private string ttlParameter = null;
+
+        private string getPara(string customParameterName)
+        {
+            return customParameterName == null ? "?" : ":" + customParameterName;
+        }
 
         public CqlUpdate(string tableName)
         {
@@ -428,11 +426,11 @@ namespace CqlSharp.Fluent.Manipulation
         /// <summary>
         /// Set the timestamp. If not specified, the current time of the insertion (in microseconds) is used. This is usually a suitable default.
         /// </summary>
-        /// <param name="time">The timestamp</param>
+        /// <param name="parameter">The timestamp parameter</param>
         /// <returns></returns>
-        public CqlUpdate WithTimestamp(long time)
+        public CqlUpdate WithTimestamp(string parameter = null)
         {
-            this.timestamp = time;
+            this.timestampParameter = this.getPara(parameter);
             return this;
         }
 
@@ -440,11 +438,11 @@ namespace CqlSharp.Fluent.Manipulation
         /// Set the time to live. If set, the inserted values are automatically removed from the database after the specified time.
         /// Note that the TTL concerns the inserted values, not the column themselves. This means that any subsequent update of the column will also reset the TTL (to whatever TTL is specified in that update). By default, values never expire.
         /// </summary>
-        /// <param name="timeToLive">The time to live in seconds</param>
+        /// <param name="parameter">The time to live in seconds parameter</param>
         /// <returns></returns>
-        public CqlUpdate WithTimeToLive(long timeToLive)
+        public CqlUpdate WithTimeToLive(string parameter = null)
         {
-            this.ttl = timeToLive;
+            this.ttlParameter = this.getPara(parameter);
             return this;
         }
 
@@ -467,13 +465,13 @@ namespace CqlSharp.Fluent.Manipulation
 
                 var toRet = new StringBuilder();
                 toRet.AppendFormat("UPDATE {0}", this.tableName);
-                if (this.ttl != 0 || this.timestamp != 0)
+                if (this.ttlParameter != null || this.timestampParameter != null)
                 {
                     toRet.Append(" USING ");
                     var and = false;
-                    if (this.timestamp != 0)
+                    if (this.timestampParameter != null)
                     {
-                        toRet.AppendFormat("TIMESTAMP {0}", this.timestamp);
+                        toRet.AppendFormat("TIMESTAMP {0}", this.timestampParameter);
                         and = true;
                     }
 
@@ -482,9 +480,9 @@ namespace CqlSharp.Fluent.Manipulation
                         toRet.Append(" AND ");
                     }
 
-                    if (this.ttl != 0)
+                    if (this.ttlParameter != null)
                     {
-                        toRet.AppendFormat("TTL {0}", this.ttl);
+                        toRet.AppendFormat("TTL {0}", this.ttlParameter);
                     }
                 }
 
